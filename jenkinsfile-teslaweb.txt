@@ -1,0 +1,25 @@
+node{
+  def mavenHome = tool name: 'maven 3.9.2'
+  stage('1Clone'){
+    //git "https://github.com/LandmakTechnology/maven-web-app"
+   // git credentialsId: 'Github', url: 'https://github.com/Landmark-Tech-C32-G26/maven-web-application-1'
+      git credentialsId: 'gitHubCredentials', url: 'https://github.com/Landmark-Tech-C32-G26/maven-web-app'
+  }
+  stage('2Test+build'){
+    sh "${mavenHome}/bin/mvn clean package"
+  }
+  stage('3SonarQube'){
+    sh "${mavenHome}/bin/mvn sonar:sonar"
+  }
+  stage('4UploadArtifacts'){
+    sh "${mavenHome}/bin/mvn deploy"
+  }
+  stage('5Deploy'){
+  deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: 'http://44.211.250.250:8177/')], contextPath: null, war: 'target/*war'
+  }
+  stage('6Notification'){
+ emailext body: '''Hi team,
+See status.
+Regards''', recipientProviders: [contributor(), upstreamDevelopers(), developers()], subject: 'Build status', to: 'developers'
+}
+}
