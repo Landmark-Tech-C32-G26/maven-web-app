@@ -1,54 +1,135 @@
-node
- {
-  
-  def mavenHome = tool name: "maven3.6.2"
-  
-      echo "GitHub BranhName ${env.BRANCH_NAME}"
-      echo "Jenkins Job Number ${env.BUILD_NUMBER}"
-      echo "Jenkins Node Name ${env.NODE_NAME}"
-  
-      echo "Jenkins Home ${env.JENKINS_HOME}"
-      echo "Jenkins URL ${env.JENKINS_URL}"
-      echo "JOB Name ${env.JOB_NAME}"
-  
-   properties([[$class: 'JiraProjectProperty'], buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '2', daysToKeepStr: '', numToKeepStr: '2')), pipelineTriggers([pollSCM('* * * * *')])])
-  
-  stage("CheckOutCodeGit")
-  {
-   git branch: 'development', credentialsId: '65fb834f-a83b-4fe7-8e11-686245c47a65', url: 'https://github.com/MithunTechnologiesDevOps/maven-web-application.git'
- }
- 
- stage("Build")
- {
- sh "${mavenHome}/bin/mvn clean package"
- }
- 
-  /*
- stage("ExecuteSonarQubeReport")
- {
- sh "${mavenHome}/bin/mvn sonar:sonar"
- }
- 
- stage("UploadArtifactsintoNexus")
- {
- sh "${mavenHome}/bin/mvn deploy"
- }
- 
-  stage("DeployAppTomcat")
- {
-  sshagent(['423b5b58-c0a3-42aa-af6e-f0affe1bad0c']) {
-    sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war  ec2-user@15.206.91.239:/opt/apache-tomcat-9.0.34/webapps/" 
-  }
- }
- 
- stage('EmailNotification')
- {
- mail bcc: 'devopstrainingblr@gmail.com', body: '''Build is over
+Jenkinsfile1: declarative
+*https://github.com/LandmakTechnology/maven-web-app*
 
- Thanks,
- Mithun Technologies,
- 9980923226.''', cc: 'devopstrainingblr@gmail.com', from: '', replyTo: '', subject: 'Build is over!!', to: 'devopstrainingblr@gmail.com'
- }
- */
+pipeline{
+  agent any  
+  tools {
+    maven "maven3.8.2"
+  }
+  //options {}  
+  //triggers {}
+  stages{
+    stage('1clone'){
+      steps{
+        sh "echo ready to automate build"
+        git branch: 'development', credentialsId: 'gitHubCredentials', url: 'https://github.com/LandmakTechnology/maven-web-app'
+        sh "echo latest application version collected from SCM"
+      }   
+    }
+    stage('2build'){
+      steps{
+        sh "echo build process starts "
+        sh "mvn clean package"
+        sh "echo build process ends"
+      }
+    }
  
- }
+    stage('3review'){
+      steps{
+        sh "echo CodeQuality review  starts "
+        sh "mvn sonar:sonar"
+        sh "echo CodeQuality review ends"
+      }
+    }      
+    stage('4UploadArtifacts'){
+      steps{
+        sh "mvn deploy"
+        sh "echo build and release job completed successfully"
+      }     
+    }
+    stage('5deployment'){
+      steps{
+        deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: 'http://54.166.85.32:8177/')], contextPath: null, war: 'target/*war'
+        sh "echo deployment to production completed successfully"
+      }       
+    }
+  }
+  post{
+    failure{
+         emailext body: '''Hi Team,
+Build failed
+Landmark Technologies''', recipientProviders: [developers(), contributor()], subject: 'build status', to: 'developers'
+
+    }
+    success{
+         emailext body: '''Hi Team,
+Build succeeded
+Landmark Technologies''', recipientProviders: [developers(), contributor()], subject: 'build status', to: 'developers'
+
+    }
+    always{
+         emailext body: '''Hi Team,
+Build status
+Landmark Technologies''', recipientProviders: [developers(), contributor()], subject: 'build status', to: 'developers'
+
+    }
+  }
+  
+}
+
+Jenkinsfile1: scripted
+
+node{
+  def mavenHome: tool name "maven3.8.2"
+  stage('1'){}
+  stage('2'){}
+  stage('3'){}
+  stage('14'){}
+}
+
+
+ maven "maven3.8.2"
+
+
+
+node{
+  def mavenHome = tool name: 'maven3.8.2'
+  stage('1Clone'){
+    //git "https://github.com/LandmakTechnology/maven-web-app"
+    git branch: 'development', credentialsId: 'gitHubCredentials', url: 'https://github.com/LandmakTechnology/maven-web-app'
+  }
+  stage('2Test+build'){
+    sh "${mavenHome}/bin/mvn clean package"
+  }
+  stage('SonarQube'){
+    sh "${mavenHome}/bin/mvn sonar:sonar"
+  }
+  stage('4UploadArtifacts'){
+    sh "${mavenHome}/bin/mvn deploy"
+  }
+  stage('5Deploy'){
+    deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: 'http://54.166.85.32:8177/')], contextPath: null, war: 'target/*war'
+  }
+  stage('6Notification'){
+    emailext body: '''Hi Team,
+Build status
+Landmark Technologies''', recipientProviders: [developers(), contributor()], subject: 'build status', to: 'developers'
+  }
+}
+
+
+node{
+  def mavenHome = tool name: 'maven3.8.2'
+  stage('1Clone'){
+    git 'https://github.com/LandmakTechnology/maven-web-application'
+  }
+  stage('2Test+build'){
+    sh "${mavenHome}/bin/mvn clean package"
+  }
+/*
+  stage('SonarQube'){
+    sh "${mavenHome}/bin/mvn sonar:sonar"
+  }
+  stage('4UploadArtifacts'){
+    sh "${mavenHome}/bin/mvn deploy"
+  }
+  stage('5Deploy'){
+    deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: 'http://54.166.85.32:8177/')], contextPath: null, war: 'target/*war'
+  }
+  stage('6Notification'){
+    emailext body: '''Hi Team,
+Build status
+Landmark Technologies''', recipientProviders: [developers(), contributor()], subject: 'build status', to: 'developers'
+  }
+  */
+}
