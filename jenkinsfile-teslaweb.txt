@@ -15,7 +15,7 @@ node{
     sh "${mavenHome}/bin/mvn deploy"
   }
   stage('5Deploy'){
-  deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: 'http://44.211.250.250:8177/')], contextPath: null, war: 'target/*war'
+  deploy adapters: [tomcat9(credentialsId: 'tomcat-credentials', path: '', url: 'http://107.23.250.231:8177/')], contextPath: null, war: 'target/*war'
   }
   stage('6Notification'){
  emailext body: '''Hi team,
